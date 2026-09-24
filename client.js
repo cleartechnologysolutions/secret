@@ -17,7 +17,7 @@ $('createForm').onsubmit=task(async()=>{
  $('link').value=location.origin+'/s/'+result.id+'#'+b64(raw);$('secret').value='';$('expires').textContent='Expires '+new Date(result.expires).toLocaleString();show('created');notice('Link created. Only the specified recipient can reveal it.');
 });
 $('copyLink').onclick=()=>copy('link');$('another').onclick=()=>{$('link').value='';show('create');notice('');};
-$('emailForm').onsubmit=task(async()=>{await api('/api/s/'+shareId+'/code',{email:$('email').value});$('codeForm').hidden=false;notice('Code sent. Check your email (and junk folder). Codes last up to 10 minutes.');$('code').focus();});
+$('emailForm').onsubmit=task(async()=>{await api('/api/s/'+shareId+'/code',{email:$('email').value});$('codeForm').hidden=false;notice('Code sent. If it doesn’t arrive, check your spam or junk folder and any email security quarantine. Codes expire within 10 minutes.');$('code').focus();});
 $('codeForm').onsubmit=task(async()=>{const r=await api('/api/s/'+shareId+'/verify',{code:$('code').value});grant=r.grant;$('code').value='';show('ready');notice('Verified. Reveal within 5 minutes, before the link expires.');});
 $('reveal').onclick=task(async()=>{
  const key=await crypto.subtle.importKey('raw',bytes(keyText),'AES-GCM',false,['decrypt']);
