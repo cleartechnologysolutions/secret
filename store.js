@@ -2,7 +2,16 @@ import { random, mac, equal, json } from './crypto.js';
 export class SecretStore {
  constructor(ctx,env){this.ctx=ctx;this.env=env;}
  async alarm(){await this.ctx.storage.deleteAll();}
- fetch(req){return this.ctx.blockConcurrencyWhile(()=>this.handle(req));}
+ async fetch(req){
+  const result=await this.ctx.blockConcurrencyWhile(()=>this.handle(req));
+  if(result instanceof Response)return result;
+  try{await this.send(result.email,result.code);return json({ok:true});}
+  catch(e){
+   await this.ctx.blockConcurrencyWhile(async()=>{const r=await this.ctx.storage.get('record');if(r&&r.salt===result.salt){delete r.codeHash;await this.ctx.storage.put('record',r);}});
+   return json({error:'[Build 1.0.3] '+(e.publicSmtpError?e.message+' Retry after one minute.':'Email delivery failed before SMTP completed. Check the runtime SMTP settings and retry after one minute.')},502);
+  }
+ }
+
  async handle(req){
  const s=this.ctx.storage, action=new URL(req.url).pathname;
  const b=await req.json(); let r=await s.get('record');
@@ -20,8 +29,7 @@ export class SecretStore {
   const code=String(a[0]%1000000).padStart(6,'0');
   r.salt=random();r.codeHash=await mac(r.verificationKey,'code:'+r.salt+':'+code);r.codeExpires=Math.min(Date.now()+600000,r.expires);r.lastSend=Date.now();r.sends++;delete r.grant;
   await s.put('record',r);
-  try{await this.send(r.email,code);}catch(e){delete r.codeHash;await s.put('record',r);return json({error:'[Build 1.0.2] '+(e.publicSmtpError?e.message+' Retry after one minute.':'Email delivery failed before SMTP completed. Check the runtime SMTP settings and retry after one minute.')},502);}
-  return json({ok:true});
+  return {email:r.email,code,salt:r.salt};
  }
  if(action==='/verify'){
   if(r.attempts>=10)return json({error:'Verification limit reached. Ask for a new link.'},429);

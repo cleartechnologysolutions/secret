@@ -19,7 +19,7 @@ export async function sendCode(env,to,code) {
   socket=connect({hostname:host,port},{secureTransport:'on'});
   socket.closed.catch(()=>{});
   reader=socket.readable.getReader();writer=socket.writable.getWriter();
-  await socket.opened;stage='server greeting';await reply([220]);stage='EHLO';await command('EHLO secret.local',[250]);
+  socket.opened.catch(()=>{});stage='server greeting';await reply([220]);stage='EHLO';await command('EHLO secret.local',[250]);
   stage='authentication';await command('AUTH LOGIN',[334]);
   const base=s=>btoa(String.fromCharCode(...encoder.encode(s)));
   await command(base(env.SMTP_USER),[334]);await command(base(env.SMTP_PASSWORD),[235]);
