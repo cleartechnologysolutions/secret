@@ -5,7 +5,7 @@
 2. In Cloudflare Workers & Pages, create a Worker connected to that repository. Name it **secret** (or change `name` in wrangler.json to match).
 3. Leave the build command empty. Deploy command: `npx wrangler deploy`.
 4. Open the Worker → Settings → **Runtime variables and secrets** (not build variables). Add both as **Secret**:
-   - `ADMIN_PASSWORD`: your own strong sender login password, at least 16 characters.
+   - `ADMIN_PASSWORD`: your own strong sender login password, at least 12 characters.
    - `SMTP_PASSWORD`: your SMTP2GO SMTP user's password.
 5. Save/deploy the settings. Open the Worker URL, sign in and create a test link addressed to yourself. Request a code, verify, reveal, and then confirm the same link cannot reveal again.
 6. Optionally add your own hostname under Domains & Routes (for example secret.cl1p.xyz).
@@ -32,7 +32,7 @@ Recipient enters the matching email, requests a six-digit code, verifies, and de
 - Max note 8 KB UTF-8 (UI also limits to 4,000 characters). Standard ASCII email addresses supported.
 
 ## Troubleshooting
-- Setup message: add secrets under Runtime variables, not Builds. ADMIN_PASSWORD must have at least 16 characters.
+- Setup message: add secrets under Runtime variables, not Builds. ADMIN_PASSWORD must have at least 12 characters.
 - Email fails: confirm SMTP User credentials, verified sender/domain, account quota, and SMTP2GO activity. Wait one minute before retrying. SMTP uses port 465 TLS; never switch this implementation to port 587 without adding STARTTLS support.
 - Incomplete link: retain the full `#...` fragment; some link rewriting tools may drop it.
 - Expired/used/verification limit: create a new link. Deleted passwords cannot be recovered by the app.

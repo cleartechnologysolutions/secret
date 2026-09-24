@@ -38,6 +38,6 @@ async function handler(req,env){
  return env.SECRETS.get(env.SECRETS.idFromName(match[1])).fetch('https://internal/'+match[2],{method:'POST',body:JSON.stringify(b)});}
  return json({error:'Not found'},404);
 }
-function ready(e){return typeof e.ADMIN_PASSWORD==='string'&&e.ADMIN_PASSWORD.length>=16&&!!e.SMTP_PASSWORD&&!!e.SMTP_USER&&!!e.SMTP_HOST&&email(e.SMTP_FROM);}
+function ready(e){return typeof e.ADMIN_PASSWORD==='string'&&e.ADMIN_PASSWORD.length>=12&&!!e.SMTP_PASSWORD&&!!e.SMTP_USER&&!!e.SMTP_HOST&&email(e.SMTP_FROM);}
 async function auth(req,e){if(!e.ADMIN_PASSWORD)return false;const token=(req.headers.get('Cookie')||'').match(/(?:^|; )session=([^;]+)/)?.[1];if(!token)return false;const [exp,sig]=token.split('.');return Number(exp)>Date.now()&&equal(sig,await mac(e.ADMIN_PASSWORD,'session:'+exp));}
 export default {async fetch(req,env){let r;try{r=await handler(req,env);}catch{r=json({error:'Request failed. Please try again.'},500);}const h=new Headers(r.headers);for(const[k,v]of Object.entries(headers))h.set(k,v);return new Response(r.body,{status:r.status,headers:h});}};

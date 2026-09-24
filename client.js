@@ -32,5 +32,5 @@ function clearSecret(){$('revealed').value='';show('shown');$('copySecret').hidd
 $('clear').onclick=clearSecret;$('copySecret').onclick=()=>copy('revealed');
 addEventListener('pagehide',()=>{$('revealed').value='';$('secret').value='';});
 addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
-(async()=>{try{if(shareId){if(!/^[\w-]{43}$/.test(keyText)||bytes(keyText).length!==32){notice('This link is incomplete. Ask the sender for the full link, including everything after #.',true);return;}show('receive');notice('');}else{const r=await(await fetch('/api/session')).json();show(r.authenticated?'create':'login');notice(r.ready?'':'Setup needed: add ADMIN_PASSWORD (at least 16 characters) and SMTP_PASSWORD as Worker runtime secrets.',!r.ready);}}catch{notice('Unable to load. Please refresh.',true);}})();
+(async()=>{try{if(shareId){if(!/^[\w-]{43}$/.test(keyText)||bytes(keyText).length!==32){notice('This link is incomplete. Ask the sender for the full link, including everything after #.',true);return;}show('receive');notice('');}else{const r=await(await fetch('/api/session')).json();show(r.authenticated?'create':'login');notice(r.ready?'':'Setup needed: add ADMIN_PASSWORD (at least 12 characters) and SMTP_PASSWORD as Worker runtime secrets.',!r.ready);}}catch{notice('Unable to load. Please refresh.',true);}})();
 `;
