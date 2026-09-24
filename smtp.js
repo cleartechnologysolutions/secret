@@ -2,10 +2,8 @@ import { connect } from 'cloudflare:sockets';
 import { email } from './crypto.js';
 export async function sendCode(env,to,code) {
  if(!email(to)||!email(env.SMTP_FROM)||!/^\d{6}$/.test(code))throw Error('Invalid mail settings');
- const socket=connect({hostname:env.SMTP_HOST,port:Number(env.SMTP_PORT)},{secureTransport:'on'});
- socket.closed.catch(()=>{});
- const reader=socket.readable.getReader(), writer=socket.writable.getWriter();
- let buffer='', total=0, timer, stage='connection';
+ let socket, reader, writer, buffer='', total=0, timer, stage='connection';
+ const host=String(env.SMTP_HOST||'').trim(), port=Number(env.SMTP_PORT);
  const decoder=new TextDecoder(), encoder=new TextEncoder();
  async function reply(expected) {
   for(let lines=0;lines<100;lines++) {
@@ -17,6 +15,10 @@ export async function sendCode(env,to,code) {
  }
  async function command(s,codes) {await writer.write(encoder.encode(s+'\r\n'));await reply(codes);}
  const run=async()=>{
+  if(!/^[a-zA-Z0-9.-]+$/.test(host)||![465,443,8465].includes(port))throw Error('Invalid SMTP_HOST or implicit-TLS SMTP_PORT; use hostname only and port 465, 443, or 8465.');
+  socket=connect({hostname:host,port},{secureTransport:'on'});
+  socket.closed.catch(()=>{});
+  reader=socket.readable.getReader();writer=socket.writable.getWriter();
   await socket.opened;stage='server greeting';await reply([220]);stage='EHLO';await command('EHLO secret.local',[250]);
   stage='authentication';await command('AUTH LOGIN',[334]);
   const base=s=>btoa(String.fromCharCode(...encoder.encode(s)));
@@ -25,6 +27,12 @@ export async function sendCode(env,to,code) {
   await command(['From: Secret <'+env.SMTP_FROM+'>','To: <'+to+'>','Subject: Your password retrieval code','Date: '+new Date().toUTCString(),'Message-ID: <'+crypto.randomUUID()+'@'+env.SMTP_FROM.split('@')[1]+'>','MIME-Version: 1.0','Content-Type: text/plain; charset=UTF-8','','Your verification code is: '+code,'','This code expires in 10 minutes, or sooner if the link expires.','Enter it only on the Secret page where you requested it.','If you did not request this code, ignore this email.','','.'].join('\r\n'),[250]);
  };
  try { await Promise.race([run(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('SMTP timeout')),12000);})]); }
- catch(e){const status=Number.isInteger(e.smtpCode)?' (SMTP '+e.smtpCode+')':'';const hint=stage==='authentication'?'Check the SMTP2GO SMTP user and SMTP_PASSWORD.':stage==='sender address'||stage==='message submission'?'Check the verified sender/domain and sending quota in SMTP2GO.':'Check SMTP2GO activity and the TLS host/port settings.';const failure=Error('SMTP failed at '+stage+status+'. '+hint);failure.publicSmtpError=true;throw failure;}
- finally {clearTimeout(timer);socket.close().catch(()=>{});}
+ catch(e){const status=Number.isInteger(e.smtpCode)?' (SMTP '+e.smtpCode+')':'';const hint=stage==='authentication'?'Check the SMTP2GO SMTP user and SMTP_PASSWORD.':stage==='sender address'||stage==='message submission'?'Check the verified sender/domain and sending quota in SMTP2GO.':'Check SMTP2GO activity and the TLS host/port settings.';let detail='';
+ if(stage==='connection'){
+  detail=String(e?.message||'Unknown connection error');
+  for(const value of [env.SMTP_PASSWORD,env.SMTP_USER,to,code]){if(value){detail=detail.split(String(value)).join('[redacted]');const encoded=btoa(String.fromCharCode(...new TextEncoder().encode(String(value))));detail=detail.split(encoded).join('[redacted]');}}
+  detail=' Connection detail: '+detail.replace(/[\x00-\x1f\x7f]/g,' ').slice(0,400);
+ }
+ const failure=Error('SMTP failed at '+stage+status+'. '+hint+detail);failure.publicSmtpError=true;throw failure;}
+ finally {clearTimeout(timer);if(socket)socket.close().catch(()=>{});}
 }
