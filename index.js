@@ -11,7 +11,7 @@ async function handler(req,env){
   if(p==='/client.js')return new Response(client,{headers:{'Content-Type':'application/javascript'}});
   if(p==='/style.css')return new Response(css,{headers:{'Content-Type':'text/css'}});
   if(p==='/'||/^\/s\/[A-Za-z0-9_-]{43}$/.test(p))return new Response(page,{headers:{'Content-Type':'text/html; charset=utf-8'}});
-  if(p==='/api/session')return json({ready:ready(env)});
+  if(p==='/api/session')return json({ready:ready(env),build:'1.0.2'});
   return json({error:'Not found'},404);
  }
  if(req.method!=='POST')return json({error:'Method not allowed'},405);

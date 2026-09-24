@@ -20,7 +20,7 @@ export class SecretStore {
   const code=String(a[0]%1000000).padStart(6,'0');
   r.salt=random();r.codeHash=await mac(r.verificationKey,'code:'+r.salt+':'+code);r.codeExpires=Math.min(Date.now()+600000,r.expires);r.lastSend=Date.now();r.sends++;delete r.grant;
   await s.put('record',r);
-  try{await this.send(r.email,code);}catch(e){delete r.codeHash;await s.put('record',r);return json({error:e.publicSmtpError?e.message+' Retry after one minute.':'Email delivery failed before SMTP completed. Check the runtime SMTP settings and retry after one minute.'},502);}
+  try{await this.send(r.email,code);}catch(e){delete r.codeHash;await s.put('record',r);return json({error:'[Build 1.0.2] '+(e.publicSmtpError?e.message+' Retry after one minute.':'Email delivery failed before SMTP completed. Check the runtime SMTP settings and retry after one minute.')},502);}
   return json({ok:true});
  }
  if(action==='/verify'){
