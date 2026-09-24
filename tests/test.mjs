@@ -3,7 +3,7 @@ import {SecretStore} from '../store.js';
 import worker from '../index.js';
 import {random} from '../crypto.js';
 class Storage{constructor(){this.map=new Map();}async get(k){return structuredClone(this.map.get(k));}async put(k,v){this.map.set(k,structuredClone(v));}async deleteAll(){this.map.clear();}async setAlarm(t){this.alarm=t;}}
-const env={ADMIN_PASSWORD:'test-only-admin-password-very-long',SMTP_PASSWORD:'fake',SMTP_USER:'sender@example.com',SMTP_HOST:'example.com',SMTP_FROM:'sender@example.com'};
+const env={SMTP_PASSWORD:'fake',SMTP_USER:'sender@example.com',SMTP_HOST:'example.com',SMTP_FROM:'sender@example.com'};
 function store(){let queue=Promise.resolve();const ctx={storage:new Storage(),blockConcurrencyWhile(fn){const p=queue.then(fn);queue=p.catch(()=>{});return p;}};const o=new SecretStore(ctx,env);o.send=async(to,code)=>{o.sent={to,code};};return o;}
 async function call(o,path,b={}){return o.fetch(new Request('https://internal/'+path,{method:'POST',body:JSON.stringify(b)}));}
 const secret='Sensitive test password',raw=crypto.getRandomValues(new Uint8Array(32)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await crypto.subtle.importKey('raw',raw,'AES-GCM',false,['encrypt','decrypt']);
@@ -25,12 +25,12 @@ const failed=store();failed.send=async()=>{throw Error('mail failed');};await ca
 const expiredCode=store();await call(expiredCode,'create',payload);await call(expiredCode,'code',{email:payload.email});let r=await expiredCode.ctx.storage.get('record');r.codeExpires=0;await expiredCode.ctx.storage.put('record',r);assert.equal((await call(expiredCode,'verify',{code:expiredCode.sent.code})).status,400);
 const objects=new Map();env.SECRETS={idFromName:x=>x,get(id){if(!objects.has(id))objects.set(id,store());return {fetch:(url,init)=>objects.get(id).fetch(new Request(url,init))};}};
 const request=(path,b,cookie)=>new Request('https://secret.example'+path,{method:'POST',headers:{Origin:'https://secret.example','Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body:JSON.stringify(b)});
-assert.equal((await worker.fetch(request('/api/create',{}),env)).status,403);
-const login=await worker.fetch(request('/api/login',{password:env.ADMIN_PASSWORD}),env);assert.equal(login.status,200);const cookie=login.headers.get('set-cookie').split(';')[0];assert(cookie);
+const cookie=undefined;
+assert.equal((await (await worker.fetch(new Request('https://secret.example/api/session'),env)).json()).ready,true);
 const created=await worker.fetch(request('/api/create',{...payload,ttl:300},cookie),env);assert.equal(created.status,200);const {id}=await created.json();assert.equal(id.length,43);
 assert.equal((await worker.fetch(new Request('https://secret.example/s/'+id),env)).status,200);assert((await objects.get(id).ctx.storage.get('record')).ciphertext);
 assert.equal((await worker.fetch(new Request('https://secret.example/api/s/'+id+'/reveal'),env)).status,404);
 const wrongOrigin=request('/api/login',{password:env.ADMIN_PASSWORD});wrongOrigin.headers.set('Origin','https://evil.example');assert.equal((await worker.fetch(wrongOrigin,env)).status,403);
 assert.equal((await worker.fetch(request('/api/create',{...payload,ttl:0},cookie),env)).status,400);
 assert.equal(created.headers.get('cache-control'),'no-store');
-console.log('PASS encryption, expiry, OTP attempts/expiry/reuse, cooldown, mail failure, atomic one-time retrieval, admin authentication, scanner GET safety, origin checks, and cache headers.');
+console.log('PASS encryption, expiry, OTP attempts/expiry/reuse, cooldown, mail failure, atomic one-time retrieval, public creation without admin credentials, scanner GET safety, origin checks, and cache headers.');

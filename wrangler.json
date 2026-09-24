@@ -1,1 +1,56 @@
-{"name":"secret","main":"index.js","compatibility_date":"2026-05-15","vars":{"SMTP_HOST":"mail.smtp2go.com","SMTP_PORT":"465","SMTP_USER":"noreply@cl1p.xyz","SMTP_FROM":"noreply@cl1p.xyz"},"durable_objects":{"bindings":[{"name":"SECRETS","class_name":"SecretStore"}]},"migrations":[{"tag":"v1","new_sqlite_classes":["SecretStore"]}],"ratelimits":[{"name":"REQUEST_LIMITER","namespace_id":"942401","simple":{"limit":30,"period":60}},{"name":"LOGIN_LIMITER","namespace_id":"942402","simple":{"limit":5,"period":60}}],"observability":{"enabled":false}}
+{
+  "name": "secret",
+  "main": "index.js",
+  "compatibility_date": "2026-05-15",
+  "vars": {
+    "SMTP_HOST": "mail.smtp2go.com",
+    "SMTP_PORT": "465",
+    "SMTP_USER": "noreply@cl1p.xyz",
+    "SMTP_FROM": "noreply@cl1p.xyz"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "SECRETS",
+        "class_name": "SecretStore"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "SecretStore"
+      ]
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "REQUEST_LIMITER",
+      "namespace_id": "942401",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    },
+    {
+      "name": "CREATE_LIMITER",
+      "namespace_id": "942402",
+      "simple": {
+        "limit": 5,
+        "period": 60
+      }
+    },
+    {
+      "name": "MAIL_LIMITER",
+      "namespace_id": "942403",
+      "simple": {
+        "limit": 5,
+        "period": 60
+      }
+    }
+  ],
+  "observability": {
+    "enabled": false
+  }
+}

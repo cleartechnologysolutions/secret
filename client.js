@@ -1,5 +1,5 @@
 export const client=String.raw`
-const $=id=>document.getElementById(id), sections=['login','create','created','receive','ready','shown'];
+const $=id=>document.getElementById(id), sections=['create','created','receive','ready','shown'];
 let grant='',keyText=location.hash.slice(1),shareId=location.pathname.split('/')[2],busy=false;
 function show(id){sections.forEach(s=>$(s).hidden=s!==id);}
 function notice(s,error=false){$('notice').textContent=s;$('notice').className=error?'error':'';}
@@ -8,8 +8,6 @@ function task(fn){return async e=>{e?.preventDefault();if(busy)return;busy=true;
 const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
 const bytes=s=>Uint8Array.from(atob(s.replaceAll('-','+').replaceAll('_','/')),x=>x.charCodeAt(0));
 async function copy(id){try{await navigator.clipboard.writeText($(id).value);notice('Copied.');}catch{$(id).select();notice('Select and copy the text above.');}}
-$('loginForm').onsubmit=task(async()=>{await api('/api/login',{password:$('admin').value});$('admin').value='';show('create');notice('');});
-$('logout').onclick=task(async()=>{await api('/api/logout',{});$('secret').value='';show('login');notice('Signed out.');});
 $('createForm').onsubmit=task(async()=>{
  const plain=$('secret').value;if(!plain.trim())throw Error('Enter a password or note.');if(new TextEncoder().encode(plain).length>8000)throw Error('Keep the note under 8 KB.');
  const raw=crypto.getRandomValues(new Uint8Array(32)),iv=crypto.getRandomValues(new Uint8Array(12));
@@ -32,5 +30,5 @@ function clearSecret(){$('revealed').value='';show('shown');$('copySecret').hidd
 $('clear').onclick=clearSecret;$('copySecret').onclick=()=>copy('revealed');
 addEventListener('pagehide',()=>{$('revealed').value='';$('secret').value='';});
 addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
-(async()=>{try{if(shareId){if(!/^[\w-]{43}$/.test(keyText)||bytes(keyText).length!==32){notice('This link is incomplete. Ask the sender for the full link, including everything after #.',true);return;}show('receive');notice('');}else{const r=await(await fetch('/api/session')).json();show(r.authenticated?'create':'login');notice(r.ready?'':'Setup needed: add ADMIN_PASSWORD (at least 12 characters) and SMTP_PASSWORD as Worker runtime secrets.',!r.ready);}}catch{notice('Unable to load. Please refresh.',true);}})();
+(async()=>{try{if(shareId){if(!/^[\w-]{43}$/.test(keyText)||bytes(keyText).length!==32){notice('This link is incomplete. Ask the sender for the full link, including everything after #.',true);return;}show('receive');notice('');}else{const r=await(await fetch('/api/session')).json();show('create');notice(r.ready?'':'Setup needed: add SMTP_PASSWORD as Worker runtime secrets.',!r.ready);}}catch{notice('Unable to load. Please refresh.',true);}})();
 `;
